@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   config = stored;
   document.getElementById('settings-btn').addEventListener('click', () => chrome.runtime.openOptionsPage());
+  document.getElementById('admin-btn').addEventListener('click', () => chrome.tabs.create({ url: `http://${config.piholeIp}/admin/` }));
 
   document.getElementById('suspend-btn').addEventListener('click', async () => {
     const isEnabled = document.getElementById('status-text').textContent === 'Enabled';
