@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="no-config">
+    <p>Configure your Pi-hole connection to get started.</p>
+    <button id="open-settings">Open Settings</button>
+  </div>
+
+  <div id="main">
+    <header>
+      <div class="status-bar">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Loading...</span>
+      </div>
+      <div class="header-right">
+        <span class="title">Pi-hole Monitor</span>
+        <button class="icon-btn" id="suspend-btn" title="Suspend blocking">⏸</button>
+        <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
+      </div>
+    </header>
+    <div id="suspend-panel" class="suspend-panel">
+      <span class="suspend-label">Suspend for:</span>
+      <button class="dur-btn" data-seconds="30">30s</button>
+      <button class="dur-btn" data-seconds="300">5m</button>
+      <button class="dur-btn" data-seconds="1800">30m</button>
+      <button class="dur-btn" data-seconds="0">∞</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="queries-count">—</div>
+        <div class="stat-label">Queries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value blocked" id="blocked-count">—</div>
+        <div class="stat-label">Blocked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value pct" id="blocked-pct">—</div>
+        <div class="stat-label">% Blocked</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Recent Blocks</span>
+      <span class="last-updated" id="last-updated"></span>
+    </div>
+
+    <div id="error" class="error"></div>
+    <div id="blocked-list"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
