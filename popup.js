@@ -2,6 +2,30 @@ const BLOCKED_STATUSES = new Set([1, 4, 5, 6, 7, 8, 9]);
 const REFRESH_MS = 5000;
 
 let config = {};
+let pausedUntil = null; // null=unknown, 0=indefinite, >0=epoch ms
+let isCurrentlyPaused = false;
+
+function formatCountdown(ms) {
+  if (ms <= 0) return '0:00';
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function renderPausedStatus() {
+  if (!isCurrentlyPaused) return;
+  let text;
+  if (pausedUntil === null) {
+    text = 'Paused';
+  } else if (pausedUntil === 0) {
+    text = 'Paused ∞';
+  } else {
+    const remaining = pausedUntil - Date.now();
+    text = remaining <= 0 ? 'Resuming…' : `Paused ${formatCountdown(remaining)}`;
+  }
+  document.getElementById('status-text').textContent = text;
+}
 
 function timeAgo(timestamp) {
   const delta = Math.floor(Date.now() / 1000) - parseInt(timestamp);
@@ -36,13 +60,19 @@ async function fetchRecentBlocked() {
 
 function updateStats(summary) {
   const enabled = summary.status === 'enabled';
+  isCurrentlyPaused = !enabled;
   document.getElementById('status-dot').className = `dot ${enabled ? 'green' : 'red'}`;
-  document.getElementById('status-text').textContent = enabled ? 'Enabled' : 'Disabled';
   const suspendBtn = document.getElementById('suspend-btn');
   if (enabled) {
+    document.getElementById('status-text').textContent = 'Enabled';
     suspendBtn.textContent = '⏸';
     suspendBtn.title = 'Suspend blocking';
+    if (pausedUntil !== null) {
+      pausedUntil = null;
+      chrome.storage.local.remove('pausedUntil');
+    }
   } else {
+    renderPausedStatus();
     suspendBtn.textContent = '▶';
     suspendBtn.title = 'Resume blocking';
     document.getElementById('suspend-panel').style.display = 'none';
@@ -71,6 +101,8 @@ function updateBlockedList(blocked) {
 }
 
 async function suspendPihole(seconds) {
+  pausedUntil = seconds > 0 ? Date.now() + seconds * 1000 : 0;
+  chrome.storage.local.set({ pausedUntil });
   await fetch(
     `http://${config.piholeIp}/admin/api.php?disable=${seconds}&auth=${config.piholeToken}`,
     { signal: AbortSignal.timeout(5000) }
@@ -80,6 +112,8 @@ async function suspendPihole(seconds) {
 }
 
 async function enablePihole() {
+  pausedUntil = null;
+  chrome.storage.local.remove('pausedUntil');
   await fetch(
     `http://${config.piholeIp}/admin/api.php?enable&auth=${config.piholeToken}`,
     { signal: AbortSignal.timeout(5000) }
@@ -102,7 +136,8 @@ async function refresh() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const stored = await chrome.storage.local.get(['piholeIp', 'piholeToken']);
+  const stored = await chrome.storage.local.get(['piholeIp', 'piholeToken', 'pausedUntil']);
+  if (stored.pausedUntil !== undefined) pausedUntil = stored.pausedUntil;
   if (!stored.piholeIp || !stored.piholeToken) {
     document.getElementById('no-config').style.display = 'block';
     document.getElementById('main').style.display = 'none';
@@ -115,8 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('admin-btn').addEventListener('click', () => chrome.tabs.create({ url: `http://${config.piholeIp}/admin/` }));
 
   document.getElementById('suspend-btn').addEventListener('click', async () => {
-    const isEnabled = document.getElementById('status-text').textContent === 'Enabled';
-    if (!isEnabled) {
+    if (isCurrentlyPaused) {
       await enablePihole();
     } else {
       const panel = document.getElementById('suspend-panel');
@@ -132,4 +166,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await refresh();
   setInterval(refresh, REFRESH_MS);
+  setInterval(renderPausedStatus, 1000);
 });
