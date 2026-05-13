@@ -9,6 +9,10 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'poll') poll();
 });
 
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && 'pausedUntil' in changes) poll();
+});
+
 function makeIcon(color) {
   const imageData = {};
   for (const size of [16, 32]) {

@@ -101,23 +101,23 @@ function updateBlockedList(blocked) {
 }
 
 async function suspendPihole(seconds) {
-  pausedUntil = seconds > 0 ? Date.now() + seconds * 1000 : 0;
-  chrome.storage.local.set({ pausedUntil });
   await fetch(
     `http://${config.piholeIp}/admin/api.php?disable=${seconds}&auth=${config.piholeToken}`,
     { signal: AbortSignal.timeout(5000) }
   );
+  pausedUntil = seconds > 0 ? Date.now() + seconds * 1000 : 0;
+  chrome.storage.local.set({ pausedUntil });
   document.getElementById('suspend-panel').style.display = 'none';
   await refresh();
 }
 
 async function enablePihole() {
-  pausedUntil = null;
-  chrome.storage.local.remove('pausedUntil');
   await fetch(
     `http://${config.piholeIp}/admin/api.php?enable&auth=${config.piholeToken}`,
     { signal: AbortSignal.timeout(5000) }
   );
+  pausedUntil = null;
+  chrome.storage.local.remove('pausedUntil');
   await refresh();
 }
 
