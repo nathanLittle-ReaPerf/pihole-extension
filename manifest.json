@@ -3,7 +3,7 @@
   "name": "Pi-hole Monitor",
   "version": "1.0",
   "description": "Real-time Pi-hole blocking monitor",
-  "permissions": ["storage", "alarms", "action", "tabs"],
+  "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": ["http://*/*"],
   "background": {
     "service_worker": "background.js"
