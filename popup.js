@@ -85,6 +85,21 @@ function updateStats(summary) {
     `${parseFloat(summary.ads_percentage_today || 0).toFixed(1)}%`;
 }
 
+async function whitelistDomain(domain, row) {
+  try {
+    await fetch(
+      `http://${config.piholeIp}/admin/api.php?list=white&add=${encodeURIComponent(domain)}&auth=${config.piholeToken}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    row.innerHTML = `<span class="whitelisted-msg">✓ ${escapeHtml(domain)}</span>`;
+    setTimeout(() => row.remove(), 2000);
+  } catch (e) {
+    const btn = row.querySelector('.allow-btn');
+    btn.textContent = '!';
+    setTimeout(() => { btn.textContent = '+'; }, 2000);
+  }
+}
+
 function updateBlockedList(blocked) {
   const list = document.getElementById('blocked-list');
   if (!blocked.length) {
@@ -96,8 +111,16 @@ function updateBlockedList(blocked) {
       <span class="domain" title="${escapeHtml(q[2])}">${escapeHtml(q[2])}</span>
       <span class="client">${escapeHtml(q[3])}</span>
       <span class="time">${timeAgo(q[0])}</span>
+      <button class="allow-btn" data-domain="${escapeHtml(q[2])}" title="Whitelist domain">+</button>
     </div>
   `).join('');
+
+  list.querySelectorAll('.allow-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      whitelistDomain(btn.dataset.domain, btn.closest('.block-item'));
+    });
+  });
 }
 
 async function suspendPihole(seconds) {
