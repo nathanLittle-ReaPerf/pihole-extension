@@ -10,7 +10,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 async function poll() {
-  const { piholeIp, piholeToken } = await chrome.storage.local.get(['piholeIp', 'piholeToken']);
+  const { piholeIp, piholeToken, pausedUntil } = await chrome.storage.local.get(['piholeIp', 'piholeToken', 'pausedUntil']);
   if (!piholeIp || !piholeToken) {
     chrome.action.setBadgeText({ text: '?' });
     chrome.action.setBadgeBackgroundColor({ color: '#888' });
@@ -24,7 +24,10 @@ async function poll() {
     const data = await res.json();
     const pct = Math.round(parseFloat(data.ads_percentage_today) || 0);
     chrome.action.setBadgeText({ text: `${pct}%` });
-    chrome.action.setBadgeBackgroundColor({ color: data.status === 'enabled' ? '#a6e3a1' : '#f38ba8' });
+    const isPaused = data.status !== 'enabled' && pausedUntil !== undefined;
+    chrome.action.setBadgeBackgroundColor({
+      color: data.status === 'enabled' ? '#a6e3a1' : isPaused ? '#fab387' : '#f38ba8'
+    });
   } catch {
     chrome.action.setBadgeText({ text: 'ERR' });
     chrome.action.setBadgeBackgroundColor({ color: '#f38ba8' });
