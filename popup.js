@@ -49,6 +49,15 @@ async function fetchSummary() {
   return res.json();
 }
 
+async function fetchTopBlocked() {
+  const res = await fetch(
+    `http://${config.piholeIp}/admin/api.php?topItems&auth=${config.piholeToken}`,
+    { signal: AbortSignal.timeout(5000) }
+  );
+  const data = await res.json();
+  return Object.entries(data.top_ads || {});
+}
+
 async function fetchRecentQueries() {
   const res = await fetch(
     `http://${config.piholeIp}/admin/api.php?getAllQueries=200&auth=${config.piholeToken}`,
@@ -172,6 +181,32 @@ function updateAllowedList(allowed) {
   });
 }
 
+function updateTopList(entries) {
+  const list = document.getElementById('top-list');
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty">No data yet</div>';
+    return;
+  }
+  const max = entries[0][1];
+  list.innerHTML = entries.map(([domain, count]) => `
+    <div class="block-item top-item">
+      <div class="top-bar-wrap">
+        <div class="top-bar" style="width:${Math.round((count / max) * 100)}%"></div>
+        <span class="domain" title="${escapeHtml(domain)}">${escapeHtml(domain)}</span>
+      </div>
+      <span class="top-count">${count.toLocaleString()}</span>
+      <button class="allow-btn" data-domain="${escapeHtml(domain)}" title="Whitelist domain">+</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.allow-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      whitelistDomain(btn.dataset.domain, btn.closest('.block-item'));
+    });
+  });
+}
+
 async function suspendPihole(seconds) {
   await fetch(
     `http://${config.piholeIp}/admin/api.php?disable=${seconds}&auth=${config.piholeToken}`,
@@ -195,10 +230,11 @@ async function enablePihole() {
 
 async function refresh() {
   try {
-    const [summary, queries] = await Promise.all([fetchSummary(), fetchRecentQueries()]);
+    const [summary, queries, topEntries] = await Promise.all([fetchSummary(), fetchRecentQueries(), fetchTopBlocked()]);
     updateStats(summary);
     updateBlockedList(queries.blocked);
     updateAllowedList(queries.allowed);
+    updateTopList(topEntries);
     document.getElementById('error').style.display = 'none';
     document.getElementById('last-updated').textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -244,6 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const tab = btn.dataset.tab;
       document.getElementById('blocked-list').style.display = tab === 'blocked' ? '' : 'none';
       document.getElementById('allowed-list').style.display = tab === 'allowed' ? '' : 'none';
+      document.getElementById('top-list').style.display = tab === 'top' ? '' : 'none';
     });
   });
 
