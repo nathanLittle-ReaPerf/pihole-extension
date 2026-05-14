@@ -34,6 +34,10 @@ function timeAgo(timestamp) {
   return `${Math.floor(delta / 3600)}h ago`;
 }
 
+function parseNum(val) {
+  return Number(String(val || 0).replace(/,/g, ''));
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -91,11 +95,11 @@ function updateStats(summary) {
     document.getElementById('suspend-panel').style.display = 'none';
   }
   document.getElementById('queries-count').textContent =
-    parseInt(summary.dns_queries_today || 0).toLocaleString();
+    parseNum(summary.dns_queries_today).toLocaleString();
   document.getElementById('blocked-count').textContent =
-    parseInt(summary.ads_blocked_today || 0).toLocaleString();
+    parseNum(summary.ads_blocked_today).toLocaleString();
   document.getElementById('blocked-pct').textContent =
-    `${parseFloat(summary.ads_percentage_today || 0).toFixed(1)}%`;
+    `${parseNum(summary.ads_percentage_today).toFixed(1)}%`;
 }
 
 async function whitelistDomain(domain, row) {

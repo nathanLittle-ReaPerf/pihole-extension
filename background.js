@@ -42,7 +42,7 @@ async function poll() {
       { signal: AbortSignal.timeout(5000), cache: 'no-store' }
     );
     const data = await res.json();
-    const pct = Math.round(parseFloat(data.ads_percentage_today) || 0);
+    const pct = Math.round(Number(String(data.ads_percentage_today || 0).replace(/,/g, '')));
     const isPaused = data.status !== 'enabled' && pausedUntil !== undefined;
     const color = data.status === 'enabled' ? '#a6e3a1' : isPaused ? '#fab387' : '#f38ba8';
     chrome.action.setIcon({ imageData: makeIcon(color) });
