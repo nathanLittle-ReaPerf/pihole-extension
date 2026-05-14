@@ -39,7 +39,7 @@ async function poll() {
   try {
     const res = await fetch(
       `http://${piholeIp}/admin/api.php?summary&auth=${piholeToken}`,
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(5000), cache: 'no-store' }
     );
     const data = await res.json();
     const pct = Math.round(parseFloat(data.ads_percentage_today) || 0);

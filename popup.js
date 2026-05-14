@@ -44,7 +44,7 @@ function escapeHtml(str) {
 async function fetchSummary() {
   const res = await fetch(
     `http://${config.piholeIp}/admin/api.php?summary&auth=${config.piholeToken}`,
-    { signal: AbortSignal.timeout(5000) }
+    { signal: AbortSignal.timeout(5000), cache: 'no-store' }
   );
   return res.json();
 }
@@ -52,7 +52,7 @@ async function fetchSummary() {
 async function fetchTopBlocked() {
   const res = await fetch(
     `http://${config.piholeIp}/admin/api.php?topItems&auth=${config.piholeToken}`,
-    { signal: AbortSignal.timeout(5000) }
+    { signal: AbortSignal.timeout(5000), cache: 'no-store' }
   );
   const data = await res.json();
   return Object.entries(data.top_ads || {});
@@ -61,7 +61,7 @@ async function fetchTopBlocked() {
 async function fetchRecentQueries() {
   const res = await fetch(
     `http://${config.piholeIp}/admin/api.php?getAllQueries=200&auth=${config.piholeToken}`,
-    { signal: AbortSignal.timeout(5000) }
+    { signal: AbortSignal.timeout(5000), cache: 'no-store' }
   );
   const data = await res.json();
   const all = data.data || [];
