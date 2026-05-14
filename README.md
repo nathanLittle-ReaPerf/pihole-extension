@@ -6,8 +6,8 @@ A Chrome extension for monitoring and managing your Pi-hole from the toolbar.
 
 - **Toolbar badge** — shows today's block percentage in green, red when Pi-hole is unreachable or disabled, orange when manually paused
 - **Stats** — live query count, blocked count, and block percentage
-- **Blocked tab** — up to 60 recent blocked queries; click `+` to whitelist a domain
-- **Allowed tab** — up to 60 recent allowed queries; click a domain to open it in a new tab, click `−` to blacklist it
+- **Blocked tab** — up to 60 recent blocked queries, deduplicated by domain with a repeat count; type in the search bar to filter; click `+` to whitelist a domain
+- **Allowed tab** — up to 60 recent allowed queries; type in the search bar to filter; click a domain to open it in a new tab, click `−` to blacklist it
 - **Top tab** — top blocked domains today with relative count bars; click `+` to whitelist
 - **Pause/resume** — suspend blocking for 30s, 5m, 30m, or indefinitely with a countdown in the badge
 
