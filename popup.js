@@ -128,15 +128,30 @@ async function blacklistDomain(domain, row) {
   }
 }
 
+function deduplicateByDomain(queries) {
+  const seen = new Map();
+  for (const q of queries) {
+    const domain = q[2];
+    if (!seen.has(domain)) {
+      seen.set(domain, { q, count: 1 });
+    } else {
+      seen.get(domain).count++;
+    }
+  }
+  return [...seen.values()];
+}
+
 function updateBlockedList(blocked) {
   const list = document.getElementById('blocked-list');
   if (!blocked.length) {
     list.innerHTML = '<div class="empty">No recent blocks</div>';
     return;
   }
-  list.innerHTML = blocked.slice(0, 60).map(q => `
+  const deduped = deduplicateByDomain(blocked).slice(0, 60);
+  list.innerHTML = deduped.map(({ q, count }) => `
     <div class="block-item">
       <span class="domain" title="${escapeHtml(q[2])}">${escapeHtml(q[2])}</span>
+      ${count > 1 ? `<span class="repeat-count">×${count}</span>` : ''}
       <span class="client">${escapeHtml(q[3])}</span>
       <span class="time">${timeAgo(q[0])}</span>
       <button class="allow-btn" data-domain="${escapeHtml(q[2])}" title="Whitelist domain">+</button>
@@ -207,6 +222,16 @@ function updateTopList(entries) {
   });
 }
 
+function applySearch(term) {
+  const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  const list = document.getElementById(`${activeTab}-list`);
+  const lower = term.toLowerCase();
+  list.querySelectorAll('.block-item').forEach(row => {
+    const domain = (row.querySelector('.domain, .domain-link') || {}).textContent || '';
+    row.style.display = domain.toLowerCase().includes(lower) ? '' : 'none';
+  });
+}
+
 async function suspendPihole(seconds) {
   await fetch(
     `http://${config.piholeIp}/admin/api.php?disable=${seconds}&auth=${config.piholeToken}`,
@@ -273,6 +298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  const searchInput = document.getElementById('search');
+  searchInput.addEventListener('input', () => applySearch(searchInput.value));
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -281,6 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('blocked-list').style.display = tab === 'blocked' ? '' : 'none';
       document.getElementById('allowed-list').style.display = tab === 'allowed' ? '' : 'none';
       document.getElementById('top-list').style.display = tab === 'top' ? '' : 'none';
+      searchInput.value = '';
     });
   });
 

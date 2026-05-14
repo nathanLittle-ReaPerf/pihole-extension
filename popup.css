@@ -178,6 +178,34 @@ header {
   padding-bottom: 4px;
 }
 
+.search-input {
+  display: block;
+  width: calc(100% - 28px);
+  margin: 6px 14px 4px;
+  padding: 5px 10px;
+  background: #181825;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  color: #cdd6f4;
+  font-size: 12px;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: #45475a;
+}
+
+.search-input:focus {
+  border-color: #cba6f7;
+}
+
+.repeat-count {
+  font-size: 10px;
+  color: #6c7086;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .query-list {
   max-height: 260px;
   overflow-y: auto;
