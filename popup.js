@@ -49,13 +49,17 @@ async function fetchSummary() {
   return res.json();
 }
 
-async function fetchRecentBlocked() {
+async function fetchRecentQueries() {
   const res = await fetch(
     `http://${config.piholeIp}/admin/api.php?getAllQueries=200&auth=${config.piholeToken}`,
     { signal: AbortSignal.timeout(5000) }
   );
   const data = await res.json();
-  return (data.data || []).filter(q => BLOCKED_STATUSES.has(parseInt(q[4])));
+  const all = data.data || [];
+  return {
+    blocked: all.filter(q => BLOCKED_STATUSES.has(parseInt(q[4]))),
+    allowed: all.filter(q => !BLOCKED_STATUSES.has(parseInt(q[4]))),
+  };
 }
 
 function updateStats(summary) {
@@ -100,6 +104,21 @@ async function whitelistDomain(domain, row) {
   }
 }
 
+async function blacklistDomain(domain, row) {
+  try {
+    await fetch(
+      `http://${config.piholeIp}/admin/api.php?list=black&add=${encodeURIComponent(domain)}&auth=${config.piholeToken}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    row.innerHTML = `<span class="blacklisted-msg">✕ ${escapeHtml(domain)}</span>`;
+    setTimeout(() => row.remove(), 2000);
+  } catch (e) {
+    const btn = row.querySelector('.block-btn');
+    btn.textContent = '!';
+    setTimeout(() => { btn.textContent = '−'; }, 2000);
+  }
+}
+
 function updateBlockedList(blocked) {
   const list = document.getElementById('blocked-list');
   if (!blocked.length) {
@@ -119,6 +138,36 @@ function updateBlockedList(blocked) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       whitelistDomain(btn.dataset.domain, btn.closest('.block-item'));
+    });
+  });
+}
+
+function updateAllowedList(allowed) {
+  const list = document.getElementById('allowed-list');
+  if (!allowed.length) {
+    list.innerHTML = '<div class="empty">No recent allowed queries</div>';
+    return;
+  }
+  list.innerHTML = allowed.slice(0, 60).map(q => `
+    <div class="block-item">
+      <a class="domain-link" href="http://${escapeHtml(q[2])}" title="Open ${escapeHtml(q[2])}" data-domain="${escapeHtml(q[2])}">${escapeHtml(q[2])}</a>
+      <span class="client">${escapeHtml(q[3])}</span>
+      <span class="time">${timeAgo(q[0])}</span>
+      <button class="block-btn" data-domain="${escapeHtml(q[2])}" title="Blacklist domain">−</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.domain-link').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: `http://${a.dataset.domain}` });
+    });
+  });
+
+  list.querySelectorAll('.block-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      blacklistDomain(btn.dataset.domain, btn.closest('.block-item'));
     });
   });
 }
@@ -146,9 +195,10 @@ async function enablePihole() {
 
 async function refresh() {
   try {
-    const [summary, blocked] = await Promise.all([fetchSummary(), fetchRecentBlocked()]);
+    const [summary, queries] = await Promise.all([fetchSummary(), fetchRecentQueries()]);
     updateStats(summary);
-    updateBlockedList(blocked);
+    updateBlockedList(queries.blocked);
+    updateAllowedList(queries.allowed);
     document.getElementById('error').style.display = 'none';
     document.getElementById('last-updated').textContent =
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -184,6 +234,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.dur-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       await suspendPihole(parseInt(btn.dataset.seconds));
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('blocked-list').style.display = tab === 'blocked' ? '' : 'none';
+      document.getElementById('allowed-list').style.display = tab === 'allowed' ? '' : 'none';
     });
   });
 

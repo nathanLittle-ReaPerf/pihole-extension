@@ -46,13 +46,15 @@
       </div>
     </div>
 
-    <div class="section-header">
-      <span class="section-title">Recent Blocks</span>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="blocked">Blocked</button>
+      <button class="tab-btn" data-tab="allowed">Allowed</button>
       <span class="last-updated" id="last-updated"></span>
     </div>
 
     <div id="error" class="error"></div>
-    <div id="blocked-list"></div>
+    <div id="blocked-list" class="query-list"></div>
+    <div id="allowed-list" class="query-list" style="display:none"></div>
   </div>
 
   <script src="popup.js"></script>
